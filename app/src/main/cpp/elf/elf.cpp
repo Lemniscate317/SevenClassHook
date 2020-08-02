@@ -114,9 +114,10 @@ Elf_Addr ElfImg::GetSymOffset(const char *name) {
         char *strings = (char *) strtab_start;
         int k;
         for (k = 0; k < dynsym_count; k++, sym++)
+//            LOGD("%s",(strings + sym->st_name));
             if (strcmp(strings + sym->st_name, name) == 0) {
                 _offset = sym->st_value;
-                LOGD("find %s: %x\n", elf, _offset);
+                LOGD("find %s: %x  %s\n", elf, _offset,strings + sym->st_name);
                 return _offset;
             }
     }
