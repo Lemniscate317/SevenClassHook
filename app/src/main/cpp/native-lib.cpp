@@ -12,6 +12,7 @@
 #include "DexFile.h"
 #include<sys/stat.h>
 #include<sys/types.h>
+#include<thread>
 
 namespace art {
 
@@ -61,7 +62,7 @@ void *new_loadmethod(void *thiz, DexFile &dex_file,
                      art::Handle *klass,
                      art::ArtMethod *dst) {
 
-    if (strcmp((char *) dex_file.pHeader->magic, "dex\n035")!=0) {
+    if (strcmp((char *) dex_file.pHeader->magic, "dex\n035") != 0) {
         return old_loadmethod(thiz, dex_file, it, klass, dst);
     }
 
@@ -276,7 +277,7 @@ void hookLogic() {
                                                     art::Handle *,
                                                     art::ArtMethod *)>( SandInlineHookSym(
                 libartPath,
-                                                                                        "_ZN3art11ClassLinker10LoadMethodERKNS_7DexFileERKNS_21ClassDataItemIteratorENS_6HandleINS_6mirror5ClassEEEPNS_9ArtMethodE",
+                "_ZN3art11ClassLinker10LoadMethodERKNS_7DexFileERKNS_21ClassDataItemIteratorENS_6HandleINS_6mirror5ClassEEEPNS_9ArtMethodE",
 //                "_ZN3art11ClassLinker10LoadMethodERKNS_7DexFileERKNS_21ClassDataItemIteratorENS_6HandleINS_6mirror5ClassEEEPNS_9ArtMethodE",
                 reinterpret_cast<void *>(new_loadmethod)));
     } else {
@@ -303,11 +304,85 @@ void hookLogic() {
 //    }
 }
 
+
+/**
+ * 获取包名
+ * @param env
+ * @return
+ */
+char *getPackageName(JNIEnv *env) {
+    pid_t pid = getpid();
+    __android_log_print(ANDROID_LOG_DEBUG, TAG, "process id %d\n", pid);
+    char path[64] = {0};
+    sprintf(path, "/proc/%d/cmdline", pid);
+    FILE *cmdline = fopen(path, "r");
+    if (cmdline) {
+        char application_id[64] = {0};
+        fread(application_id, sizeof(application_id), 1, cmdline);
+        __android_log_print(ANDROID_LOG_DEBUG, TAG, "application id %s\n", application_id);
+        fclose(cmdline);
+        return application_id;
+    }
+    return "";
+}
+
+pthread_t *mThread;
+
+void * realCall2(JavaVM *vm) {
+    JNIEnv *env = NULL;
+    if (vm->GetEnv((void **) &env, JNI_VERSION_1_4) != JNI_OK) { //从JavaVM获取JNIEnv，一般使用1.4的版本
+        return nullptr;
+    }
+    char *packageName = getPackageName(env);
+    LOGE("%s", packageName);
+    if (strcmp(packageName, "com.kanxue.test2") != 0) {
+        return nullptr;
+    }
+
+    void *base = SandGetModuleBase("libnative-lib.so");
+    LOGE("libnative.so base %p", base);
+
+    //100A4 Java_com_kanxue_test2_MainActivity_jnitest
+    unsigned long tmpaddr = (unsigned long) base + 0x100A4;
+    void *methodAddr = reinterpret_cast<void *>(tmpaddr);
+
+
+    typedef bool (*jnitest)(JNIEnv *env, jobject obj, jstring str);
+    jnitest jnitest_function = nullptr;
+
+    jnitest_function = reinterpret_cast<jnitest >(methodAddr);
+
+    char *str[] = {"x", "X", "u", "U", "e", "E"};
+
+    for (int i = 0; i < sizeof(str); i++) {
+        for (int j = 0; j < sizeof(str); j++) {
+            for (int k = 0; k < sizeof(str); k++) {
+                char key[3] = {0};
+                sprintf(key, "%s%s%s", str[i], str[j], str[k]);
+
+                LOGE("key %s", key);
+                bool b = jnitest_function(env, nullptr, env->NewStringUTF(key));
+                LOGE("res %d", b);
+            }
+        }
+    }
+}
+
+
+void call2(JavaVM *vm) {
+
+    realCall2(vm);
+
+    //pthread_create(mThread, nullptr, realCall2, nullptr);
+}
+
 extern "C" jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
 
     LOGE("jni onload enter");
-    hookLogic();
+    //hookLogic();
     LOGE("jni onload stop");
+
+    call2(vm);
 
     return JNI_VERSION_1_6;
 }

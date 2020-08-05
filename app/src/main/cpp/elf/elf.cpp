@@ -157,6 +157,7 @@ void *ElfImg::GetModuleBase(const char *name) {
     int found = 0;
     maps = fopen("/proc/self/maps", "r");
     while (fgets(buff, sizeof(buff), maps)) {
+        LOGE("lib name:%s", buff);
         if ((strstr(buff, "r-xp") || strstr(buff, "r--p")) && strstr(buff, name)) {
             found = 1;
             __android_log_print(ANDROID_LOG_DEBUG, "dlopen", "%s\n", buff);

@@ -16,6 +16,7 @@ public class Hook2 implements IXposedHookLoadPackage {
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpparam) throws Throwable {
 
 
+
         if (lpparam.packageName.equals("com.kanxue.test2")) {
             ClassLoader classLoader = lpparam.classLoader;
             Class<?> mainActivity = classLoader.loadClass("com.kanxue.test2.MainActivity");
@@ -29,6 +30,9 @@ public class Hook2 implements IXposedHookLoadPackage {
                 @Override
                 protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                     super.afterHookedMethod(param);
+
+                    System.loadLibrary("sandhook-native");
+
 
 //                    for (int i = 0; i < strs.length; i++) {
 //                        for (int j = 0; j < strs.length; j++) {
