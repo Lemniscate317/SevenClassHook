@@ -9,6 +9,9 @@
 #include "hook.h"
 #include "elf.h"
 #include "android/log.h"
+#include "DexFile.h"
+#include<sys/stat.h>
+#include<sys/types.h>
 
 namespace art {
 
@@ -38,29 +41,53 @@ namespace art {
 //    return old_Invoke(self, args, args_size, result, shorty);
 //}
 //
-void *(*old_Invoke)(void *thiz, art::Thread *, uint32_t *, uint32_t, art::JValue *,
-                    const char *) = nullptr;
-
-void *
-new_Invoke(void *thiz, art::Thread *self, uint32_t *args, uint32_t args_size, art::JValue *result,
-           const char *shorty) {
-    LOGE("new_invoke");
-    return old_Invoke(thiz, self, args, args_size, result, shorty);
-}
-
-//void *(*old_loadmethod)(art::DexFile& ,
-//                        art::ClassDataItemIterator& ,
-//                        art::Handle* ,
-//                        art::ArtMethod* ) = nullptr;
+//void *(*old_Invoke)(void *thiz, art::Thread *, uint32_t *, uint32_t, art::JValue *,
+//                    const char *) = nullptr;
 //
-//void *new_loadmethod(art::DexFile& dex_file,
-//                             art::ClassDataItemIterator& it,
-//                             art::Handle* klass,
-//                             art::ArtMethod* dst){
-//
-//    LOGE("new loadmehtod");
-//    return old_loadmethod(dex_file, it, klass, dst);
+//void *
+//new_Invoke(void *thiz, art::Thread *self, uint32_t *args, uint32_t args_size, art::JValue *result,
+//           const char *shorty) {
+//    LOGE("new_invoke");
+//    return old_Invoke(thiz, self, args, args_size, result, shorty);
 //}
+
+void *(*old_loadmethod)(void *, DexFile &,
+                        art::ClassDataItemIterator &,
+                        art::Handle *,
+                        art::ArtMethod *) = nullptr;
+
+void *new_loadmethod(void *thiz, DexFile &dex_file,
+                     art::ClassDataItemIterator &it,
+                     art::Handle *klass,
+                     art::ArtMethod *dst) {
+
+    if (strcmp((char *) dex_file.pHeader->magic, "dex\n035")!=0) {
+        return old_loadmethod(thiz, dex_file, it, klass, dst);
+    }
+
+//    const u1 *base = dex_file.baseAddr;
+    const DexHeader *base = dex_file.pHeader;
+    int size = dex_file.pHeader->fileSize;
+    LOGE("new opheader::%p ", dex_file.pOptHeader);
+    LOGE("new header::%p ", dex_file.pHeader);
+    LOGE("new magic::%p ", dex_file.pHeader->magic);
+    LOGE("new loadmehtod::%p  %i  %s", base, size, dex_file.pHeader->magic);
+
+    int pid = getpid();
+    char dexFilePath[100] = {0};
+    sprintf(dexFilePath, "/sdcard/xxxxx/%p %d LoadMethod.dex", base, size);
+    mkdir("/sdcard/xxxxx", 0777);
+
+    int fd = open(dexFilePath, O_CREAT | O_RDWR, 666);
+    if (fd > 0) {
+        ssize_t i = write(fd, base, size);
+        if (i > 0) {
+            close(fd);
+        }
+    }
+
+    return old_loadmethod(thiz, dex_file, it, klass, dst);
+}
 
 
 void dumpArtMethod(art::ArtMethod *artmethod) {
@@ -241,23 +268,27 @@ void hookLogic() {
 //                reinterpret_cast<void *>(new_openCommon)));
 //    }
 
-//    if (sizeof(void *) == 8) {
-//        const char *libartPath = "/system/lib64/libart.so";
-//        old_loadmethod = reinterpret_cast<void *(*)(art::DexFile& ,
-//                                                art::ClassDataItemIterator& ,
-//                                                art::Handle* ,
-//                                                art::ArtMethod* )>( SandInlineHookSym(libartPath,
+
+    if (sizeof(void *) == 8) {
+        const char *libartPath = "/system/lib64/libart.so";
+        old_loadmethod = reinterpret_cast<void *(*)(void *, DexFile &,
+                                                    art::ClassDataItemIterator &,
+                                                    art::Handle *,
+                                                    art::ArtMethod *)>( SandInlineHookSym(
+                libartPath,
 //                                                                                        "_ZN3art15DexFileVerifier17CheckLoadMethodIdEjPKc",
-//                                                                                        reinterpret_cast<void *>(new_loadmethod)));
-//    } else {
-//        const char *libartPath = "/system/lib/libart.so";
-//        old_loadmethod = reinterpret_cast<void *(*)(art::DexFile& ,
-//                                                    art::ClassDataItemIterator& ,
-//                                                    art::Handle* ,
-//                                                    art::ArtMethod* )>( SandInlineHookSym(libartPath,
-//                                                                                             "_ZN3art15DexFileVerifier17CheckLoadMethodIdEjPKc",
-//                                                                                             reinterpret_cast<void *>(new_loadmethod)));
-//    }
+                "_ZN3art11ClassLinker10LoadMethodERKNS_7DexFileERKNS_21ClassDataItemIteratorENS_6HandleINS_6mirror5ClassEEEPNS_9ArtMethodE",
+                reinterpret_cast<void *>(new_loadmethod)));
+    } else {
+        const char *libartPath = "/system/lib/libart.so";
+        old_loadmethod = reinterpret_cast<void *(*)(void *, DexFile &,
+                                                    art::ClassDataItemIterator &,
+                                                    art::Handle *,
+                                                    art::ArtMethod *)>( SandInlineHookSym(
+                libartPath,
+                "_ZN3art15DexFileVerifier17CheckLoadMethodIdEjPKc",
+                reinterpret_cast<void *>(new_loadmethod)));
+    }
 
 //    if (sizeof(void *) == 8) {
 //        const char *libcpath = "/system/lib64/libc.so";
