@@ -276,8 +276,8 @@ void hookLogic() {
                                                     art::Handle *,
                                                     art::ArtMethod *)>( SandInlineHookSym(
                 libartPath,
-//                                                                                        "_ZN3art15DexFileVerifier17CheckLoadMethodIdEjPKc",
-                "_ZN3art11ClassLinker10LoadMethodERKNS_7DexFileERKNS_21ClassDataItemIteratorENS_6HandleINS_6mirror5ClassEEEPNS_9ArtMethodE",
+                                                                                        "_ZN3art11ClassLinker10LoadMethodERKNS_7DexFileERKNS_21ClassDataItemIteratorENS_6HandleINS_6mirror5ClassEEEPNS_9ArtMethodE",
+//                "_ZN3art11ClassLinker10LoadMethodERKNS_7DexFileERKNS_21ClassDataItemIteratorENS_6HandleINS_6mirror5ClassEEEPNS_9ArtMethodE",
                 reinterpret_cast<void *>(new_loadmethod)));
     } else {
         const char *libartPath = "/system/lib/libart.so";
@@ -286,7 +286,7 @@ void hookLogic() {
                                                     art::Handle *,
                                                     art::ArtMethod *)>( SandInlineHookSym(
                 libartPath,
-                "_ZN3art15DexFileVerifier17CheckLoadMethodIdEjPKc",
+                "_ZN3art11ClassLinker10LoadMethodERKNS_7DexFileERKNS_21ClassDataItemIteratorENS_6HandleINS_6mirror5ClassEEEPNS_9ArtMethodE",
                 reinterpret_cast<void *>(new_loadmethod)));
     }
 

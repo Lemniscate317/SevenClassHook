@@ -27,11 +27,11 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
 
-        try {
-            GetClassLoaderClasslist(getClassLoader());
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            GetClassLoaderClasslist(getClassLoader());
+//        } catch (ClassNotFoundException e) {
+//            e.printStackTrace();
+//        }
     }
 
     public void GetClassLoaderClasslist(ClassLoader classLoader) throws ClassNotFoundException {
