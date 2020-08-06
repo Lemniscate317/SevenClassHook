@@ -326,17 +326,15 @@ char *getPackageName(JNIEnv *env) {
     return "";
 }
 
-pthread_t *mThread;
-
-void * realCall2(JavaVM *vm) {
+void realCall2(JavaVM *vm) {
     JNIEnv *env = NULL;
     if (vm->GetEnv((void **) &env, JNI_VERSION_1_4) != JNI_OK) { //从JavaVM获取JNIEnv，一般使用1.4的版本
-        return nullptr;
+        return ;
     }
     char *packageName = getPackageName(env);
     LOGE("%s", packageName);
     if (strcmp(packageName, "com.kanxue.test2") != 0) {
-        return nullptr;
+        return;
     }
 
     void *base = SandGetModuleBase("libnative-lib.so");
@@ -353,16 +351,35 @@ void * realCall2(JavaVM *vm) {
     jnitest_function = reinterpret_cast<jnitest >(methodAddr);
 
     char *str[] = {"x", "X", "u", "U", "e", "E"};
+//    char *str[] = {"1", "2", "3", "4", "5", "6", "7", "8"};
+//    char *str[] = {"1", "2", "3"};
 
-    for (int i = 0; i < sizeof(str); i++) {
-        for (int j = 0; j < sizeof(str); j++) {
-            for (int k = 0; k < sizeof(str); k++) {
-                char key[3] = {0};
+    char key[40];
+    size_t strSize = sizeof(str) / sizeof(char *);
+    int size = (int) strSize;
+    LOGE("str sizeOf %i", size);
+
+    int i, j, k;
+    for (i = 0; i < size; i++) {
+        for (j = 0; j < size; j++) {
+            for (k = 0; k < size; k++) {
+
+//                LOGE("before memset key index %i%i%i", i, j, k);
+                //LOGE("str %s%s%s", str[i], str[j], str[k]);
+
                 sprintf(key, "%s%s%s", str[i], str[j], str[k]);
 
                 LOGE("key %s", key);
-                bool b = jnitest_function(env, nullptr, env->NewStringUTF(key));
+
+                jstring jStr = env->NewStringUTF(key);
+                bool b = jnitest_function(env, nullptr, jStr);
                 LOGE("res %d", b);
+//
+                env->DeleteLocalRef(jStr);
+
+                if (b == 1) {
+                    return;
+                }
             }
         }
     }
@@ -370,10 +387,7 @@ void * realCall2(JavaVM *vm) {
 
 
 void call2(JavaVM *vm) {
-
     realCall2(vm);
-
-    //pthread_create(mThread, nullptr, realCall2, nullptr);
 }
 
 extern "C" jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
