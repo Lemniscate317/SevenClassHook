@@ -3,10 +3,11 @@ package com.l.sevenclasshook.hook;
 import android.os.Bundle;
 import android.util.Log;
 
-import de.robv.android.xposed.IXposedHookLoadPackage;
-import de.robv.android.xposed.XC_MethodHook;
-import de.robv.android.xposed.XposedHelpers;
-import de.robv.android.xposed.callbacks.XC_LoadPackage;
+import com.tencent.qq.game.IXposedHookLoadPackage;
+import com.tencent.qq.game.XC_MethodHook;
+import com.tencent.qq.game.XposedHelpers;
+import com.tencent.qq.game.callbacks.XC_LoadPackage;
+
 
 public class Hook2 implements IXposedHookLoadPackage {
     String[] strs = new String[122 - 48];

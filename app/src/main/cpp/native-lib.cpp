@@ -90,6 +90,44 @@ void *new_loadmethod(void *thiz, DexFile &dex_file,
     return old_loadmethod(thiz, dex_file, it, klass, dst);
 }
 
+void *(*old_loadmethod3)(void *, void *, DexFile &,
+                         art::ClassDataItemIterator &,
+                         art::Handle *,
+                         art::ArtMethod *) = nullptr;
+
+void *new_loadmethod3(void *thiz, void *thread, DexFile &dex_file,
+                      art::ClassDataItemIterator &it,
+                      art::Handle *klass,
+                      art::ArtMethod *dst) {
+
+    if (strcmp((char *) dex_file.pHeader->magic, "dex\n038") != 0) {
+        return old_loadmethod(thiz, dex_file, it, klass, dst);
+    }
+
+//    const u1 *base = dex_file.baseAddr;
+    const DexHeader *base = dex_file.pHeader;
+    int size = dex_file.pHeader->fileSize;
+    LOGE("new opheader::%p ", dex_file.pOptHeader);
+    LOGE("new header::%p ", dex_file.pHeader);
+    LOGE("new magic::%p ", dex_file.pHeader->magic);
+    LOGE("new loadmehtod::%p  %i  %s", base, size, dex_file.pHeader->magic);
+
+    int pid = getpid();
+    char dexFilePath[100] = {0};
+    sprintf(dexFilePath, "/sdcard/xxxxx/%p %d LoadMethod.dex", base, size);
+    mkdir("/sdcard/xxxxx", 0777);
+
+    int fd = open(dexFilePath, O_CREAT | O_RDWR, 666);
+    if (fd > 0) {
+        ssize_t i = write(fd, base, size);
+        if (i > 0) {
+            close(fd);
+        }
+    }
+
+    return old_loadmethod(thiz, dex_file, it, klass, dst);
+}
+
 
 void dumpArtMethod(art::ArtMethod *artmethod) {
     char *dexfilepath = (char *) malloc(sizeof(char) * 2000);
@@ -167,31 +205,54 @@ void *new_strstr(char *arg0, char *arg1) {
     };
 }
 
-void *(*old_openCommon)(const uint8_t *base,
-                        size_t size,
-                        const std::string &location,
-                        uint32_t location_checksum,
-                        void *oat_dex_file,
-                        bool verify,
-                        bool verify_checksum,
-                        std::string *error_msg,
-                        void *verify_result) = nullptr;
+//void *(*old_openCommon)(const uint8_t *base,
+//                        size_t size,
+//                        const std::string &location,
+//                        uint32_t location_checksum,
+//                        void *oat_dex_file,
+//                        bool verify,
+//                        bool verify_checksum,
+//                        std::string *error_msg,
+//                        void *verify_result) = nullptr;
+//
+//void *new_openCommon(const uint8_t *base,
+//                     size_t size,
+//                     const std::string &location,
+//                     uint32_t location_checksum,
+//                     void *oat_dex_file,
+//                     bool verify,
+//                     bool verify_checksum,
+//                     std::string *error_msg,
+//                     void *verify_result) {
+//
+//    LOGE("new open common");
+//
+//    return old_openCommon(base, size, location, location_checksum, oat_dex_file, verify,
+//                          verify_checksum, error_msg, verify_result);
+//
+//}
 
-void *new_openCommon(const uint8_t *base,
-                     size_t size,
-                     const std::string &location,
-                     uint32_t location_checksum,
-                     void *oat_dex_file,
-                     bool verify,
-                     bool verify_checksum,
-                     std::string *error_msg,
-                     void *verify_result) {
-
-    LOGE("new open common");
-
-    return old_openCommon(base, size, location, location_checksum, oat_dex_file, verify,
-                          verify_checksum, error_msg, verify_result);
-
+void hookLogic3() {
+    if (sizeof(void *) == 8) {
+        const char *libartPath = "/system/lib64/libart.so";
+        old_loadmethod3 = reinterpret_cast<void *(*)(void *, void *,DexFile &,
+                                                    art::ClassDataItemIterator &,
+                                                    art::Handle *,
+                                                    art::ArtMethod *)>( SandInlineHookSym(
+                libartPath,
+                "_ZN3art11ClassLinker10LoadMethodERKNS_7DexFileERKNS_21ClassDataItemIteratorENS_6HandleINS_6mirror5ClassEEEPNS_9ArtMethodE",
+//                "_ZN3art11ClassLinker10LoadMethodERKNS_7DexFileERKNS_21ClassDataItemIteratorENS_6HandleINS_6mirror5ClassEEEPNS_9ArtMethodE",
+                reinterpret_cast<void *>(new_loadmethod3)));
+    } else {
+        const char *libartPath = "/system/lib/libart.so";
+        old_loadmethod3 = reinterpret_cast<void *(*)(void *,void *, DexFile &,
+                                                    art::ClassDataItemIterator &,
+                                                    art::Handle *,
+                                                    art::ArtMethod *)>( SandInlineHookSym(
+                libartPath,
+                "_ZN3art11ClassLinker10LoadMethodEPNS_6ThreadERKNS_7DexFileERKNS_21ClassDataItemIteratorENS_6HandleINS_6mirror5ClassEEEPNS_9ArtMethodE",
+                reinterpret_cast<void *>(new_loadmethod3)));
+    }
 }
 
 void hookLogic() {
@@ -329,7 +390,7 @@ char *getPackageName(JNIEnv *env) {
 void realCall2(JavaVM *vm) {
     JNIEnv *env = NULL;
     if (vm->GetEnv((void **) &env, JNI_VERSION_1_4) != JNI_OK) { //从JavaVM获取JNIEnv，一般使用1.4的版本
-        return ;
+        return;
     }
     char *packageName = getPackageName(env);
     LOGE("%s", packageName);
@@ -396,7 +457,8 @@ extern "C" jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
     //hookLogic();
     LOGE("jni onload stop");
 
-    call2(vm);
+//    call2(vm);
 
+    hookLogic3();
     return JNI_VERSION_1_6;
 }

@@ -4,16 +4,17 @@ import android.app.Application;
 import android.content.Context;
 import android.util.Log;
 
+import com.tencent.qq.game.IXposedHookLoadPackage;
+import com.tencent.qq.game.XC_MethodHook;
+import com.tencent.qq.game.XposedBridge;
+import com.tencent.qq.game.XposedHelpers;
+import com.tencent.qq.game.callbacks.XC_LoadPackage;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-import dalvik.system.PathClassLoader;
-import de.robv.android.xposed.IXposedHookLoadPackage;
-import de.robv.android.xposed.XC_MethodHook;
-import de.robv.android.xposed.XposedBridge;
-import de.robv.android.xposed.XposedHelpers;
-import de.robv.android.xposed.callbacks.XC_LoadPackage;
+
 
 public class Hook1 implements IXposedHookLoadPackage {
 
