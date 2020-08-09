@@ -33,9 +33,9 @@ public class Hook3 implements IXposedHookLoadPackage {
 
                     //System.loadLibrary("sandhook-native");
 
-                    XposedHelpers.callMethod(Runtime.getRuntime(), "doLoad", "/system/lib/libsandhook-native.so", mContext.getClassLoader());
+                    XposedHelpers.callMethod(Runtime.getRuntime(), "doLoad", "/system/lib/libnative-lib.so", mContext.getClassLoader());
 
-                    GetClassLoaderClasslist(mContext.getClassLoader());
+                    //GetClassLoaderClasslist(mContext.getClassLoader());
                 }
             });
         }
