@@ -29,7 +29,17 @@ namespace art {
 
     class Handle;
 
-    class ArtMethod;
+    class ArtMethod {
+    public:
+        uint32_t nothing1;
+        uint32_t nothing2;
+
+        // Offset to the CodeItem.
+        uint32_t dex_code_item_offset_;
+
+        // Index into method_ids of the dex file associated with this method.
+        uint32_t dex_method_index_;
+    };
 }
 
 //void *(*old_strstr)(char *, char *) = nullptr;
@@ -70,7 +80,7 @@ void *new_loadmethod3(void *thiz, void *thread, DexFile &dex_file,
                       art::Handle *klass,
                       art::ArtMethod *dst) {
 
-    __android_log_print(4, "hookso", "loadmethod in");
+//    __android_log_print(4, "hookso", "loadmethod in");
 
 
     __android_log_print(4, "hookso", "magic %s %i %p", (char *) dex_file.pHeader->magic,
@@ -84,11 +94,8 @@ void *new_loadmethod3(void *thiz, void *thread, DexFile &dex_file,
 
     const DexHeader *base = dex_file.pHeader;
     size_t size = dex_file.pHeader->fileSize;
-//    __android_log_print(4, "new opheader::%p ", dex_file.pOptHeader);
-//    __android_log_print(4, "new header::%p ", dex_file.pHeader);
-//    __android_log_print(4, "new magic::%p ",
-//                        dex_file.pHeader->magic);
-//    __android_log_print(4, "new loadmehtod::%p  %i  %s", base, size, dex_file.pHeader->magic);
+
+
 
 
 //    int pid = getpid();
@@ -105,7 +112,24 @@ void *new_loadmethod3(void *thiz, void *thread, DexFile &dex_file,
 //        }
 //    }
 
-    return old_loadmethod3(thiz, thread, dex_file, it, klass, dst);
+    void *pVoid = old_loadmethod3(thiz, thread, dex_file, it, klass, dst);
+
+    uint32_t codeItemOffset = dst->dex_code_item_offset_;
+    uint32_t idx = dst->dex_method_index_;
+
+    __android_log_print(4, "hookso", "codeItemOffset %i idx %i", codeItemOffset, idx);
+
+    long codeItem = (long) base + codeItemOffset;
+    __android_log_print(4, "hookso", "code item %ld  %p", codeItem, (void *) codeItem);
+
+
+//    __android_log_print(4, "hookso", "try size %i  ins size %i", *(u_short *)(codeItem+6),*(u_short *)(codeItem+12));
+//    u_short *trySize = (u_short *) (codeItem + 6);
+//    uint *insSize = (uint *) (codeItem + 12);
+//
+//    __android_log_print(4, "hookso", "trySize  %i insSize %i", *trySize, *insSize);
+
+    return pVoid;
 }
 
 void hook() {
