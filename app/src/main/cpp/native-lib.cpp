@@ -123,13 +123,26 @@ void *new_loadmethod3(void *thiz, void *thread, DexFile &dex_file,
     __android_log_print(4, "hookso", "code item %ld  %p", codeItem, (void *) codeItem);
 
 
-//    __android_log_print(4, "hookso", "try size %i  ins size %i", *(u_short *)(codeItem+6),*(u_short *)(codeItem+12));
+    __android_log_print(4, "hookso", "try size %i  ins size %i", *(u_short *) (codeItem + 6),
+                        *(u_short *) (codeItem + 12));
+
+
+
 //    u_short *trySize = (u_short *) (codeItem + 6);
 //    uint *insSize = (uint *) (codeItem + 12);
 //
 //    __android_log_print(4, "hookso", "trySize  %i insSize %i", *trySize, *insSize);
 
     return pVoid;
+}
+
+int checkExc(JNIEnv *env) {
+    if (env->ExceptionCheck()) {
+        env->ExceptionDescribe(); // writes to logcat
+        env->ExceptionClear();
+        return 1;
+    }
+    return -1;
 }
 
 void hook() {
