@@ -78,60 +78,47 @@ void *(*old_loadmethod3)(void *, void *, DexFile &,
 void *new_loadmethod3(void *thiz, void *thread, DexFile &dex_file,
                       art::ClassDataItemIterator &it,
                       art::Handle *klass,
-                      art::ArtMethod *dst) {
-
-//    __android_log_print(4, "hookso", "loadmethod in");
-
-
-    __android_log_print(4, "hookso", "magic %s %i %p", (char *) dex_file.pHeader->magic,
-                        dex_file.pHeader->fileSize, (void *) dex_file.pHeader->magic);
-
+                      art::ArtMethod *artmethod) {
 
     if (strcmp((char *) dex_file.pHeader->magic, "dex\n035") != 0) {
         __android_log_print(4, "hookso", "not 035 return");
-        return old_loadmethod3(thiz, thread, dex_file, it, klass, dst);
+        return old_loadmethod3(thiz, thread, dex_file, it, klass, artmethod);
     }
 
     const DexHeader *base = dex_file.pHeader;
     size_t size = dex_file.pHeader->fileSize;
 
 
+    void *pVoid = old_loadmethod3(thiz, thread, dex_file, it, klass, artmethod);
+
+    uint32_t codeItemOffset = artmethod->dex_code_item_offset_;
+    uint32_t idx = artmethod->dex_method_index_;
+
+    __android_log_print(4, "hookso", "dexFile ptr:%p   codeItemOffset %i idx %i",
+                        (void *) &dex_file, codeItemOffset, idx);
 
 
-//    int pid = getpid();
-//    char dexFilePath[100] = {0};
-////    sprintf(dexFilePath, "/sdcard/xxxxx/%p %d LoadMethod.dex", base, size);
-//    sprintf(dexFilePath, "/sdcard/xxxxx/%dLoadMethod.dex", size);
-//    mkdir("/sdcard/xxxxx", 0777);
-//
-//    int fd = open(dexFilePath, O_CREAT | O_RDWR, 666);
-//    if (fd > 0) {
-//        ssize_t i = write(fd, (void *) base, size);
-//        if (i > 0) {
-//            close(fd);
-//        }
+    if (idx < 0 || idx > 65535) {
+        __android_log_print(4, "hookso", "method idx error");
+        return pVoid;
+    }
+
+
+    //codeItemOffset 1872740752 idx 4104
+    //codeItemOffset 1872142480 idx 1025
+//    if (codeItemOffset == 1872740752 || codeItemOffset == 1872142480) {
+//        __android_log_print(4, "hookso", "ship these offset");
+//        return pVoid;
 //    }
 
-    void *pVoid = old_loadmethod3(thiz, thread, dex_file, it, klass, dst);
-
-    uint32_t codeItemOffset = dst->dex_code_item_offset_;
-    uint32_t idx = dst->dex_method_index_;
-
-    __android_log_print(4, "hookso", "codeItemOffset %i idx %i", codeItemOffset, idx);
 
     long codeItem = (long) base + codeItemOffset;
-    __android_log_print(4, "hookso", "code item %ld  %p", codeItem, (void *) codeItem);
+    __android_log_print(4, "hookso", "code item  %p  try ptr:%p  insSize ptr:%p", (void *) codeItem,
+                        (void *) (codeItem + 6), (void *) (codeItem + 12));
 
-
-    __android_log_print(4, "hookso", "try size %i  ins size %i", *(u_short *) (codeItem + 6),
-                        *(u_short *) (codeItem + 12));
-
-
-
-//    u_short *trySize = (u_short *) (codeItem + 6);
-//    uint *insSize = (uint *) (codeItem + 12);
-//
-//    __android_log_print(4, "hookso", "trySize  %i insSize %i", *trySize, *insSize);
+    __android_log_print(4, "hookso", "code item  %p  try size:%i  insSize size:%i",
+                        (void *) codeItem,
+                        *(short *) (codeItem + 6), *(short *) (codeItem + 12));
 
     return pVoid;
 }
