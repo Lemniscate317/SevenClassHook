@@ -70,6 +70,29 @@ namespace art {
 //    }
 //}
 
+struct CodeItem {
+    uint16_t registers_size_;            // the number of registers used by this code
+    //   (locals + parameters)
+    uint16_t ins_size_;                  // the number of words of incoming arguments to the method
+    //   that this code is for
+    uint16_t outs_size_;                 // the number of words of outgoing argument space required
+    //   by this code for method invocation
+    uint16_t tries_size_;                // the number of try_items for this instance. If non-zero,
+    //   then these appear as the tries array just after the
+    //   insns in this instance.
+    uint32_t debug_info_off_;            // file offset to debug info stream
+    uint32_t insns_size_in_code_units_;  // size of the insns array, in 2 byte code units
+    uint16_t insns_[1];                  // actual array of bytecode.
+};
+
+typedef std::string (*prettyMethod)(void *thiz, art::ArtMethod *, bool);
+
+typedef std::string (*prettyMethod1)(void *thiz, uint32_t method_idx, const DexFile &dex_file,
+                                     bool with_signature);
+
+prettyMethod prettyMethodFunction;
+prettyMethod1 prettyMethod1Function;
+
 void *(*old_loadmethod3)(void *, void *, DexFile &,
                          art::ClassDataItemIterator &,
                          art::Handle *,
@@ -80,45 +103,80 @@ void *new_loadmethod3(void *thiz, void *thread, DexFile &dex_file,
                       art::Handle *klass,
                       art::ArtMethod *artmethod) {
 
-    if (strcmp((char *) dex_file.pHeader->magic, "dex\n035") != 0) {
-        __android_log_print(4, "hookso", "not 035 return");
-        return old_loadmethod3(thiz, thread, dex_file, it, klass, artmethod);
-    }
+//    if (strcmp((char *) dex_file.pHeader->magic, "dex\n035") != 0) {
+//        __android_log_print(4, "hookso", "not 035 return");
+//        return old_loadmethod3(thiz, thread, dex_file, it, klass, artmethod);
+//    }
+
+
 
     const DexHeader *base = dex_file.pHeader;
     size_t size = dex_file.pHeader->fileSize;
 
-
     void *pVoid = old_loadmethod3(thiz, thread, dex_file, it, klass, artmethod);
+    if (pVoid == nullptr) {
+        __android_log_print(5, "hookso", "fuck pvoid nullptr");
+    }
 
     uint32_t codeItemOffset = artmethod->dex_code_item_offset_;
     uint32_t idx = artmethod->dex_method_index_;
-
-    __android_log_print(4, "hookso", "dexFile ptr:%p   codeItemOffset %i idx %i",
-                        (void *) &dex_file, codeItemOffset, idx);
-
 
     if (idx < 0 || idx > 65535) {
         __android_log_print(4, "hookso", "method idx error");
         return pVoid;
     }
 
+    const std::string &string = prettyMethodFunction(artmethod, artmethod,
+                                                     true);
 
-    //codeItemOffset 1872740752 idx 4104
+    if (strstr(string.c_str(), "com.android") != nullptr) {
+        __android_log_print(5, "hookso", "method name: %s skip", string.c_str());
+        return pVoid;
+    }
+    if (strstr(string.c_str(), "NativeCrashCollector") != nullptr) {
+        __android_log_print(5, "hookso", "method name: %s skip", string.c_str());
+        return pVoid;
+    }
+    if (strstr(string.c_str(), "java.net.") != nullptr) {
+        __android_log_print(5, "hookso", "method name: %s skip", string.c_str());
+        return pVoid;
+    }
+    if (strstr(string.c_str(), "android.os.") != nullptr) {
+        __android_log_print(5, "hookso", "method name: %s skip", string.c_str());
+        return pVoid;
+    }
+
+
+
+    //codeItemOffset 1872740752 idx 4104 method name:java.util.concurrent.atomic.AtomicBoolean android.os.AsyncTask.-get0(android.os.AsyncTask)
     //codeItemOffset 1872142480 idx 1025
-//    if (codeItemOffset == 1872740752 || codeItemOffset == 1872142480) {
-//        __android_log_print(4, "hookso", "ship these offset");
+    //codeItemOffset 315166720 idx 9  codeItemOffset 315351040 idx 9
+//    if (codeItemOffset == 315351040 && idx == 9) {
+//        __android_log_print(4, "hookso", "ship these offset %i  idx %i", 315351040, 9);
 //        return pVoid;
 //    }
 
 
-    long codeItem = (long) base + codeItemOffset;
-    __android_log_print(4, "hookso", "code item  %p  try ptr:%p  insSize ptr:%p", (void *) codeItem,
-                        (void *) (codeItem + 6), (void *) (codeItem + 12));
+    __android_log_print(4, "hookso", "dexFile ptr:%p   codeItemOffset %i idx %i",
+                        (void *) &dex_file, codeItemOffset, idx);
 
-    __android_log_print(4, "hookso", "code item  %p  try size:%i  insSize size:%i",
-                        (void *) codeItem,
-                        *(short *) (codeItem + 6), *(short *) (codeItem + 12));
+
+    __android_log_print(4, "hookso", "method name:%s", string.c_str());
+
+
+    long codeItemAddr = (long) base + codeItemOffset;
+    CodeItem *codeItem = (CodeItem *) codeItemAddr;
+
+
+    __android_log_print(4, "hookso", "code item  %p  try size:%i  insSize size:%i", codeItem,
+                        codeItem->tries_size_, codeItem->insns_size_in_code_units_);
+
+//    __android_log_print(4, "hookso", "code item  %p  try ptr:%p  insSize ptr:%p", (void *) codeItem,
+//                        (void *) (codeItem + 6), (void *) (codeItem + 12));
+//
+//    __android_log_print(4, "hookso", "code item  %p  try size:%i  insSize size:%i",
+//                        (void *) codeItem,
+//                        *(short *) (codeItem + 6), *(short *) (codeItem + 12));
 
     return pVoid;
 }
@@ -147,6 +205,15 @@ void hook() {
         return;
     }
     __android_log_print(4, "hookso", "load loadmethod success");
+
+    void *prettyMethodAddr = dlsym(libchandle,
+                                   "_ZN3art12PrettyMethodEPNS_9ArtMethodEb");
+    prettyMethodFunction = reinterpret_cast<prettyMethod >(prettyMethodAddr);
+
+    void *prettyMethod1Addr = dlsym(libchandle,
+                                    "_ZN3art12PrettyMethodEjRKNS_7DexFileEb");
+    prettyMethod1Function = reinterpret_cast<prettyMethod1 >(prettyMethod1Addr);
+
 }
 
 
