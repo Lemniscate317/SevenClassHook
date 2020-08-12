@@ -22,6 +22,16 @@
             android:name="xposedminversion"
             android:value="53" />
 
+        <meta-data
+            android:name="xcustommodule"
+            android:value="true" />
+        <meta-data
+            android:name="xcustomminversion"
+            android:value="53" />
+        <meta-data
+            android:name="xcustomdescription"
+            android:value="7月作业" />
+
         <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

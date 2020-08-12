@@ -90,8 +90,11 @@ typedef std::string (*prettyMethod)(void *thiz, art::ArtMethod *, bool);
 typedef std::string (*prettyMethod1)(void *thiz, uint32_t method_idx, const DexFile &dex_file,
                                      bool with_signature);
 
+typedef void (*dumpArtMethod)( art::ArtMethod *);
+
 prettyMethod prettyMethodFunction;
 prettyMethod1 prettyMethod1Function;
+dumpArtMethod dumpArtMethodFunction;
 
 void *(*old_loadmethod3)(void *, void *, DexFile &,
                          art::ClassDataItemIterator &,
@@ -110,16 +113,20 @@ void *new_loadmethod3(void *thiz, void *thread, DexFile &dex_file,
 
 
 
+
+    void *pVoid = old_loadmethod3(thiz, thread, dex_file, it, klass, artmethod);
+    __android_log_print(5, "hookso", "pVoid ptr:%p", pVoid);
+
+
     const DexHeader *base = dex_file.pHeader;
     size_t size = dex_file.pHeader->fileSize;
 
-    void *pVoid = old_loadmethod3(thiz, thread, dex_file, it, klass, artmethod);
-    if (pVoid == nullptr) {
-        __android_log_print(5, "hookso", "fuck pvoid nullptr");
-    }
-
     uint32_t codeItemOffset = artmethod->dex_code_item_offset_;
     uint32_t idx = artmethod->dex_method_index_;
+
+    dumpArtMethodFunction(artmethod);
+
+    return pVoid;
 
     if (idx < 0 || idx > 65535) {
         __android_log_print(4, "hookso", "method idx error");
@@ -213,6 +220,11 @@ void hook() {
     void *prettyMethod1Addr = dlsym(libchandle,
                                     "_ZN3art12PrettyMethodEjRKNS_7DexFileEb");
     prettyMethod1Function = reinterpret_cast<prettyMethod1 >(prettyMethod1Addr);
+
+    void *dumpArtMethodAddr = dlsym(libchandle,
+                                    "XcustomArtMethod");
+    __android_log_print(4, "hookso", "dumpArtMethod ptr:%p", dumpArtMethodAddr);
+    dumpArtMethodFunction = reinterpret_cast<dumpArtMethod >(dumpArtMethodAddr);
 
 }
 

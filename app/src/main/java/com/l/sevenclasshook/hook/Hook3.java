@@ -3,29 +3,29 @@ package com.l.sevenclasshook.hook;
 import android.app.Application;
 import android.content.Context;
 import android.util.Log;
-import android.widget.Toast;
 
-import com.tencent.qq.game.IXposedHookLoadPackage;
-import com.tencent.qq.game.XC_MethodHook;
-import com.tencent.qq.game.XposedBridge;
-import com.tencent.qq.game.XposedHelpers;
-import com.tencent.qq.game.callbacks.XC_LoadPackage;
+import de.robv.android.xcustom.IXcustomHookLoadPackage;
+import de.robv.android.xcustom.XC_MethodHook;
+import de.robv.android.xcustom.XcustomBridge;
+import de.robv.android.xcustom.XcustomHelpers;
+import de.robv.android.xcustom.callbacks.XC_LoadPackage;
 
 
-public class Hook3 implements IXposedHookLoadPackage {
+public class Hook3 implements IXcustomHookLoadPackage {
     private Context mContext;
 
     @Override
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpparam) throws Throwable {
 
+        XcustomBridge.log("test can log");
         if (lpparam.packageName.equals("com.sup.android.superb")) {
-            XposedBridge.log(lpparam.packageName + "  enter");
-            XposedHelpers.findAndHookMethod(Application.class, "attach", Context.class, new XC_MethodHook() {
+            XcustomBridge.log(lpparam.packageName + "  enter");
+            XcustomHelpers.findAndHookMethod(Application.class, "attach", Context.class, new XC_MethodHook() {
                 @Override
                 protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                     super.afterHookedMethod(param);
 
-                    XposedBridge.log("attach after");
+                    XcustomBridge.log("attach after");
 
                     mContext = (Context) param.args[0];
 
@@ -33,9 +33,9 @@ public class Hook3 implements IXposedHookLoadPackage {
 
                     //System.loadLibrary("sandhook-native");
 
-                    XposedHelpers.callMethod(Runtime.getRuntime(), "doLoad", "/system/lib/libnative-lib.so", mContext.getClassLoader());
+                    XcustomHelpers.callMethod(Runtime.getRuntime(), "doLoad", "/system/lib/libnative-lib.so", mContext.getClassLoader());
 
-                    //GetClassLoaderClasslist(mContext.getClassLoader());
+                    GetClassLoaderClasslist(mContext.getClassLoader());
                 }
             });
         }
@@ -44,20 +44,20 @@ public class Hook3 implements IXposedHookLoadPackage {
     public void GetClassLoaderClasslist(ClassLoader classLoader) {
         //private final DexPathList pathList;
         //public static java.lang.Object getObjectField(java.lang.Object obj, java.lang.String fieldName)
-        XposedBridge.log("start dealwith classloader:" + classLoader);
-        Object pathListObj = XposedHelpers.getObjectField(classLoader, "pathList");
+        XcustomBridge.log("start dealwith classloader:" + classLoader);
+        Object pathListObj = XcustomHelpers.getObjectField(classLoader, "pathList");
         //private final Element[] dexElements;
-        Object[] dexElementsObj = (Object[]) XposedHelpers.getObjectField(pathListObj, "dexElements");
+        Object[] dexElementsObj = (Object[]) XcustomHelpers.getObjectField(pathListObj, "dexElements");
         for (Object i : dexElementsObj) {
             //private final DexFile dexFile;
-            Object dexFileObj = XposedHelpers.getObjectField(i, "dexFile");
+            Object dexFileObj = XcustomHelpers.getObjectField(i, "dexFile");
             //private Object mCookie;
-            Object mCookieObj = XposedHelpers.getObjectField(dexFileObj, "mCookie");
+            Object mCookieObj = XcustomHelpers.getObjectField(dexFileObj, "mCookie");
             //private static native String[] getClassNameList(Object cookie);
             //    public static java.lang.Object callStaticMethod(java.lang.Class<?> clazz, java.lang.String methodName, java.lang.Object... args) { /* compiled code */ }
-            Class DexFileClass = XposedHelpers.findClass("dalvik.system.DexFile", classLoader);
+            Class DexFileClass = XcustomHelpers.findClass("dalvik.system.DexFile", classLoader);
 
-            String[] classlist = (String[]) XposedHelpers.callStaticMethod(DexFileClass, "getClassNameList", mCookieObj);
+            String[] classlist = (String[]) XcustomHelpers.callStaticMethod(DexFileClass, "getClassNameList", mCookieObj);
             for (String classname : classlist) {
 //                XposedBridge.log(dexFileObj + "---" + classname);
                 try {
@@ -68,7 +68,7 @@ public class Hook3 implements IXposedHookLoadPackage {
                 }
             }
         }
-        XposedBridge.log("end dealwith classloader:" + classLoader);
+        XcustomBridge.log("end dealwith classloader:" + classLoader);
 
     }
 }
