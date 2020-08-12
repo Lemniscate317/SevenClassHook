@@ -254,7 +254,35 @@ public class Hook3 implements IXcustomHookLoadPackage {
         }
     }
 
+
+    /**
+     * 01-06 00:31:12.925 12000-12060/com.sup.android.superb W/System.err: java.lang.IllegalArgumentException: Expected receiver of type dalvik.system.BaseDexClassLoader, but got com.bytedance.frameworks.plugin.core.DelegateClassLoader
+     * 01-06 00:31:12.925 12000-12060/com.sup.android.superb W/System.err:     at java.lang.reflect.Field.get(Native Method)
+     * 01-06 00:31:12.925 12000-12060/com.sup.android.superb W/System.err:     at com.l.sevenclasshook.hook.Hook3.getFieldOjbect(Hook3.java:206)
+     * 01-06 00:31:12.925 12000-12060/com.sup.android.superb W/System.err:     at com.l.sevenclasshook.hook.Hook3.TestClassloader(Hook3.java:259)
+     * 01-06 00:31:12.925 12000-12060/com.sup.android.superb W/System.err:     at com.l.sevenclasshook.hook.Hook3.fart(Hook3.java:240)
+     * 01-06 00:31:12.926 12000-12060/com.sup.android.superb W/System.err:     at com.l.sevenclasshook.hook.Hook3$3$1.run(Hook3.java:95)
+     * 01-06 00:31:12.926 12000-12060/com.sup.android.superb W/System.err:     at java.lang.Thread.run(Thread.java:818)
+     * 01-06 00:31:12.926 12000-12060/com.sup.android.superb W/System.err: java.lang.NullPointerException: null receiver
+     * 01-06 00:31:12.926 12000-12060/com.sup.android.superb W/System.err:     at java.lang.reflect.Field.get(Native Method)
+     * 01-06 00:31:12.926 12000-12060/com.sup.android.superb W/System.err:     at com.l.sevenclasshook.hook.Hook3.getFieldOjbect(Hook3.java:206)
+     * 01-06 00:31:12.926 12000-12060/com.sup.android.superb W/System.err:     at com.l.sevenclasshook.hook.Hook3.TestClassloader(Hook3.java:260)
+     * 01-06 00:31:12.926 12000-12060/com.sup.android.superb W/System.err:     at com.l.sevenclasshook.hook.Hook3.fart(Hook3.java:240)
+     * 01-06 00:31:12.926 12000-12060/com.sup.android.superb W/System.err:     at com.l.sevenclasshook.hook.Hook3$3$1.run(Hook3.java:95)
+     * 01-06 00:31:12.926 12000-12060/com.sup.android.superb W/System.err:     at java.lang.Thread.run(Thread.java:818)
+     * @param appClassloader
+     */
+
     public void TestClassloader(ClassLoader appClassloader) {
+
+
+
+        if (true) {
+            return;
+        }
+
+
+
         Field pathList_Field = (Field) getClassField(appClassloader, "dalvik.system.BaseDexClassLoader", "pathList");
         Object pathList_object = getFieldOjbect("dalvik.system.BaseDexClassLoader", appClassloader, "pathList");
         Object[] ElementsArray = (Object[]) getFieldOjbect("dalvik.system.DexPathList", pathList_object, "dexElements");
