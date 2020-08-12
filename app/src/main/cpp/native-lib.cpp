@@ -118,40 +118,40 @@ void *new_loadmethod3(void *thiz, void *thread, DexFile &dex_file,
     __android_log_print(5, "hookso", "pVoid ptr:%p", pVoid);
 
 
-    const DexHeader *base = dex_file.pHeader;
-    size_t size = dex_file.pHeader->fileSize;
-
-    uint32_t codeItemOffset = artmethod->dex_code_item_offset_;
-    uint32_t idx = artmethod->dex_method_index_;
+//    const DexHeader *base = dex_file.pHeader;
+//    size_t size = dex_file.pHeader->fileSize;
+//
+//    uint32_t codeItemOffset = artmethod->dex_code_item_offset_;
+//    uint32_t idx = artmethod->dex_method_index_;
 
     dumpArtMethodFunction(artmethod);
 
     return pVoid;
 
-    if (idx < 0 || idx > 65535) {
-        __android_log_print(4, "hookso", "method idx error");
-        return pVoid;
-    }
-
-    const std::string &string = prettyMethodFunction(artmethod, artmethod,
-                                                     true);
-
-    if (strstr(string.c_str(), "com.android") != nullptr) {
-        __android_log_print(5, "hookso", "method name: %s skip", string.c_str());
-        return pVoid;
-    }
-    if (strstr(string.c_str(), "NativeCrashCollector") != nullptr) {
-        __android_log_print(5, "hookso", "method name: %s skip", string.c_str());
-        return pVoid;
-    }
-    if (strstr(string.c_str(), "java.net.") != nullptr) {
-        __android_log_print(5, "hookso", "method name: %s skip", string.c_str());
-        return pVoid;
-    }
-    if (strstr(string.c_str(), "android.os.") != nullptr) {
-        __android_log_print(5, "hookso", "method name: %s skip", string.c_str());
-        return pVoid;
-    }
+//    if (idx < 0 || idx > 65535) {
+//        __android_log_print(4, "hookso", "method idx error");
+//        return pVoid;
+//    }
+//
+//    const std::string &string = prettyMethodFunction(artmethod, artmethod,
+//                                                     true);
+//
+//    if (strstr(string.c_str(), "com.android") != nullptr) {
+//        __android_log_print(5, "hookso", "method name: %s skip", string.c_str());
+//        return pVoid;
+//    }
+//    if (strstr(string.c_str(), "NativeCrashCollector") != nullptr) {
+//        __android_log_print(5, "hookso", "method name: %s skip", string.c_str());
+//        return pVoid;
+//    }
+//    if (strstr(string.c_str(), "java.net.") != nullptr) {
+//        __android_log_print(5, "hookso", "method name: %s skip", string.c_str());
+//        return pVoid;
+//    }
+//    if (strstr(string.c_str(), "android.os.") != nullptr) {
+//        __android_log_print(5, "hookso", "method name: %s skip", string.c_str());
+//        return pVoid;
+//    }
 
 
 
@@ -164,19 +164,19 @@ void *new_loadmethod3(void *thiz, void *thread, DexFile &dex_file,
 //    }
 
 
-    __android_log_print(4, "hookso", "dexFile ptr:%p   codeItemOffset %i idx %i",
-                        (void *) &dex_file, codeItemOffset, idx);
+//    __android_log_print(4, "hookso", "dexFile ptr:%p   codeItemOffset %i idx %i",
+//                        (void *) &dex_file, codeItemOffset, idx);
+//
+//
+//    __android_log_print(4, "hookso", "method name:%s", string.c_str());
+//
+//
+//    long codeItemAddr = (long) base + codeItemOffset;
+//    CodeItem *codeItem = (CodeItem *) codeItemAddr;
 
 
-    __android_log_print(4, "hookso", "method name:%s", string.c_str());
-
-
-    long codeItemAddr = (long) base + codeItemOffset;
-    CodeItem *codeItem = (CodeItem *) codeItemAddr;
-
-
-    __android_log_print(4, "hookso", "code item  %p  try size:%i  insSize size:%i", codeItem,
-                        codeItem->tries_size_, codeItem->insns_size_in_code_units_);
+//    __android_log_print(4, "hookso", "code item  %p  try size:%i  insSize size:%i", codeItem,
+//                        codeItem->tries_size_, codeItem->insns_size_in_code_units_);
 
 //    __android_log_print(4, "hookso", "code item  %p  try ptr:%p  insSize ptr:%p", (void *) codeItem,
 //                        (void *) (codeItem + 6), (void *) (codeItem + 12));
@@ -185,7 +185,7 @@ void *new_loadmethod3(void *thiz, void *thread, DexFile &dex_file,
 //                        (void *) codeItem,
 //                        *(short *) (codeItem + 6), *(short *) (codeItem + 12));
 
-    return pVoid;
+//    return pVoid;
 }
 
 int checkExc(JNIEnv *env) {
