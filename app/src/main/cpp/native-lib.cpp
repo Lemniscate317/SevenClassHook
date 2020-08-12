@@ -124,7 +124,12 @@ void *new_loadmethod3(void *thiz, void *thread, DexFile &dex_file,
 //    uint32_t codeItemOffset = artmethod->dex_code_item_offset_;
 //    uint32_t idx = artmethod->dex_method_index_;
 
-    dumpArtMethodFunction(artmethod);
+    try {
+        dumpArtMethodFunction(artmethod);
+    }catch (...){
+
+    }
+
 
     return pVoid;
 

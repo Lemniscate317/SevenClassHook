@@ -8,6 +8,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 
 import dalvik.system.DexClassLoader;
 import dalvik.system.PathClassLoader;
@@ -20,12 +22,14 @@ import de.robv.android.xcustom.callbacks.XC_LoadPackage;
 
 public class Hook3 implements IXcustomHookLoadPackage {
     private Context mContext;
+    private List<ClassLoader> mClassLoaders = new ArrayList<>();
+
 
     @Override
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpparam) throws Throwable {
 
         XcustomBridge.log("test can log");
-        if (lpparam.packageName.equals("com.sup.android.superb")) {
+        if (lpparam.packageName.equals("com.sup.android.superb") && lpparam.isFirstApplication) {
             XcustomBridge.log(lpparam.packageName + "  enter");
 
 
@@ -37,21 +41,9 @@ public class Hook3 implements IXcustomHookLoadPackage {
                     final ClassLoader classLoader = (ClassLoader) param.thisObject;
                     XcustomBridge.log("DexClassLoader:" + classLoader.toString());
 
-                    testSomeClassExist(classLoader);
+                    //testSomeClassExist(classLoader);
 
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                Thread.sleep(20 * 1000);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-
-                            GetClassLoaderClasslist(classLoader);
-
-                        }
-                    }).start();
+                    mClassLoaders.add(classLoader);
 
                 }
             });
@@ -64,20 +56,9 @@ public class Hook3 implements IXcustomHookLoadPackage {
                     final ClassLoader classLoader = (ClassLoader) param.thisObject;
                     XcustomBridge.log("PathClassLoader:" + classLoader.toString());
 
-                    testSomeClassExist(classLoader);
+                    //testSomeClassExist(classLoader);
 
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                Thread.sleep(20 * 1000);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-
-                            GetClassLoaderClasslist(classLoader);
-                        }
-                    }).start();
+                    mClassLoaders.add(classLoader);
                 }
             });
 
@@ -91,23 +72,9 @@ public class Hook3 implements IXcustomHookLoadPackage {
 
                     mContext = (Context) param.args[0];
 
-                    //Toast.makeText(mContext,"after attach",Toast.LENGTH_SHORT).show();
 
-                    //System.loadLibrary("sandhook-native");
 
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                Thread.sleep(10 * 1000);
-                                XcustomHelpers.callMethod(Runtime.getRuntime(), "doLoad", "/system/lib/libnative-lib.so", mContext.getClassLoader());
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }).start();
-
-                    GetClassLoaderClasslist(mContext.getClassLoader());
+                    XcustomHelpers.callMethod(Runtime.getRuntime(), "doLoad", "/system/lib/libnative-lib.so", mContext.getClassLoader());
 
                     new Thread(new Runnable() {
                         @Override
@@ -116,11 +83,21 @@ public class Hook3 implements IXcustomHookLoadPackage {
                                 Thread.sleep(30 * 1000);
                             } catch (InterruptedException e) {
                                 e.printStackTrace();
+                                Log.e("hook1", Log.getStackTraceString(e));
+                            }
+
+
+                            for (int i = 0; i < mClassLoaders.size(); i++) {
+                                ClassLoader classLoader = mClassLoaders.get(i);
+                                TestClassloader(classLoader);
                             }
 
                             fart();
                         }
                     }).start();
+
+                    //GetClassLoaderClasslist(mContext.getClassLoader());
+
                 }
             });
         }
@@ -255,12 +232,12 @@ public class Hook3 implements IXcustomHookLoadPackage {
 
         if (appClassloader.toString().indexOf("java.lang.BootClassLoader") == -1) {
 //            testSomeClassExist(appClassloader);
-            GetClassLoaderClasslist(appClassloader);
+            TestClassloader(appClassloader);
         }
         while (parentClassloader != null) {
             if (parentClassloader.toString().indexOf("java.lang.BootClassLoader") == -1) {
 //                testSomeClassExist(parentClassloader);
-                GetClassLoaderClasslist(parentClassloader);
+                TestClassloader(parentClassloader);
             }
             tmpClassloader = parentClassloader;
             parentClassloader = parentClassloader.getParent();
@@ -310,7 +287,17 @@ public class Hook3 implements IXcustomHookLoadPackage {
             }
         }
         Field mCookiefield = getClassField(appClassloader, "dalvik.system.DexFile", "mCookie");
-        Log.v("ActivityThread->methods", "dalvik.system.DexPathList.ElementsArray.length:" + ElementsArray.length);//5个
+        if (ElementsArray == null) {
+            Log.e("hook1", "element null");
+            Log.e("hook1", "element null");
+            Log.e("hook1", "element null");
+            Log.e("hook1", "element null");
+            Log.e("hook1", "element null");
+            Log.e("hook1", "element null");
+            Log.e("hook1", "element null");
+            return;
+        }
+        Log.e("ActivityThread->methods", "dalvik.system.DexPathList.ElementsArray.length:" + ElementsArray.length);//5个
         for (int j = 0; j < ElementsArray.length; j++) {
             Object element = ElementsArray[j];
             Object dexfile = null;
@@ -351,13 +338,13 @@ public class Hook3 implements IXcustomHookLoadPackage {
                 }
                 if (classnames != null) {
                     for (String eachclassname : classnames) {
-                        if (eachclassname.startsWith("com.tencent.bugly.yaq.crashreport")) {
-                            Log.e("Hook1", "ship xxxxxxxxxxxxx=====>" + eachclassname);
-                            continue;
-                        }
-
                         Log.e("Hook1", "BaseDexClassLoader->TestClassLoader:classname->" + eachclassname);
-                        loadClassAndInvoke(appClassloader, eachclassname, XcustomMethodCode_method);
+//                        loadClassAndInvoke(appClassloader, eachclassname, XcustomMethodCode_method);
+                        try {
+                            appClassloader.loadClass(eachclassname);
+                        } catch (ClassNotFoundException e) {
+                            e.printStackTrace();
+                        }
                     }
                 }
 
@@ -429,6 +416,19 @@ public class Hook3 implements IXcustomHookLoadPackage {
             }
         }
     }
+
+    /**
+     * Process: com.sup.android.superb, PID: 2395
+     * java.lang.NoSuchFieldError: com.bytedance.frameworks.plugin.core.DelegateClassLoader#pathList
+     * at de.robv.android.xcustom.XcustomHelpers.findField(XcustomHelpers.java:105)
+     * at de.robv.android.xcustom.XcustomHelpers.getObjectField(XcustomHelpers.java:894)
+     * at com.l.sevenclasshook.hook.Hook3.GetClassLoaderClasslist(Hook3.java:437)
+     * at com.l.sevenclasshook.hook.Hook3.fart(Hook3.java:263)
+     * at com.l.sevenclasshook.hook.Hook3$3$2.run(Hook3.java:121)
+     * at java.lang.Thread.run(Thread.java:818)
+     *
+     * @param classLoader
+     */
 
     public void GetClassLoaderClasslist(ClassLoader classLoader) {
         //private final DexPathList pathList;
