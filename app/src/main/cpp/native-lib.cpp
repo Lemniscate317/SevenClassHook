@@ -90,11 +90,36 @@ typedef std::string (*prettyMethod)(void *thiz, art::ArtMethod *, bool);
 typedef std::string (*prettyMethod1)(void *thiz, uint32_t method_idx, const DexFile &dex_file,
                                      bool with_signature);
 
-typedef void (*dumpArtMethod)( art::ArtMethod *);
+typedef void (*dumpArtMethod)(art::ArtMethod *);
 
 prettyMethod prettyMethodFunction;
 prettyMethod1 prettyMethod1Function;
 dumpArtMethod dumpArtMethodFunction;
+
+static inline uint32_t DecodeUnsignedLeb128(const uint8_t **data) {
+    const uint8_t *ptr = *data;
+    int result = *(ptr++);
+    if ((result > 0x7f)) {
+        int cur = *(ptr++);
+        result = (result & 0x7f) | ((cur & 0x7f) << 7);
+        if (cur > 0x7f) {
+            cur = *(ptr++);
+            result |= (cur & 0x7f) << 14;
+            if (cur > 0x7f) {
+                cur = *(ptr++);
+                result |= (cur & 0x7f) << 21;
+                if (cur > 0x7f) {
+                    // Note: We don't check to see if cur is out of range here,
+                    // meaning we tolerate garbage in the four high-order bits.
+                    cur = *(ptr++);
+                    result |= cur << 28;
+                }
+            }
+        }
+    }
+    *data = ptr;
+    return static_cast<uint32_t>(result);
+}
 
 void *(*old_loadmethod3)(void *, void *, DexFile &,
                          art::ClassDataItemIterator &,
@@ -118,17 +143,62 @@ void *new_loadmethod3(void *thiz, void *thread, DexFile &dex_file,
     __android_log_print(5, "hookso", "pVoid ptr:%p", pVoid);
 
 
-//    const DexHeader *base = dex_file.pHeader;
-//    size_t size = dex_file.pHeader->fileSize;
+    const DexHeader *base = dex_file.pHeader;
+    size_t size = dex_file.pHeader->fileSize;
 //
 //    uint32_t codeItemOffset = artmethod->dex_code_item_offset_;
 //    uint32_t idx = artmethod->dex_method_index_;
 
-    try {
-        dumpArtMethodFunction(artmethod);
-    }catch (...){
+    if (size == 8958236) {
+        u4 classDefSize = dex_file.pHeader->classDefsSize;
+        u4 classDefsOff = dex_file.pHeader->classDefsOff;
 
+        __android_log_print(5, "hookso", "base:%p", (void *) base);
+
+        __android_log_print(5, "hookso", "classDefSize:%ld   classDefsOff:%p", classDefSize,
+                            (void *) classDefsOff);
+
+        u4 typeIdsOff = dex_file.pHeader->typeIdsOff;
+        u4 stringIdsOff = dex_file.pHeader->stringIdsOff;
+
+        __android_log_print(5, "hookso", "typeIdsOff:%p   stringIdsOff:%p", (void *) typeIdsOff,
+                            (void *) stringIdsOff);
+
+        int i;
+        for (i = 0; i < classDefSize; i++) {
+            long currClassAddr = (long) classDefsOff + i * 32 + (long) base;
+            __android_log_print(5, "hookso", "currClass ptr:%p", (void *) currClassAddr);
+            int *idx = (int *) (currClassAddr);
+            __android_log_print(5, "hookso", "currClassIdx:%i", *idx);
+
+            int tmpIdx = *idx;
+            long currTypeIdAddr = ((long) typeIdsOff + 4 * tmpIdx + (long) base);
+            int *currTypeIdx = (int *) currTypeIdAddr;
+            __android_log_print(5, "hookso", "currTypeIdx:%ld", *currTypeIdx);
+
+            tmpIdx = *currTypeIdx;
+            long currStringOffAddr = ((long) stringIdsOff + 4 * tmpIdx + (long) base);
+            int *currStringOff = (int *) currStringOffAddr;
+            __android_log_print(5, "hookso", "currStringOff:%ld", *currStringOff);
+
+            tmpIdx = *currStringOff;
+            long off = (long) base + tmpIdx;
+            __android_log_print(5, "hookso", "string off:%p", (void *) off);
+
+            const uint8_t *strPtr = (uint8_t *) off;
+            DecodeUnsignedLeb128(&strPtr);
+            char *classname = (char *) strPtr;
+
+            __android_log_print(5, "hookso", "classname:%s", classname);
+
+        }
     }
+
+//    try {
+//        dumpArtMethodFunction(artmethod);
+//    }catch (...){
+//
+//    }
 
 
     return pVoid;
