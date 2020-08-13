@@ -2,8 +2,17 @@ package com.l.sevenclasshook.hook;
 
 import android.app.Application;
 import android.content.Context;
+import android.os.Environment;
+import android.text.TextUtils;
 import android.util.Log;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -11,6 +20,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
+import dalvik.system.BaseDexClassLoader;
 import dalvik.system.DexClassLoader;
 import dalvik.system.PathClassLoader;
 import de.robv.android.xcustom.IXcustomHookLoadPackage;
@@ -71,7 +81,6 @@ public class Hook3 implements IXcustomHookLoadPackage {
                     XcustomBridge.log("attach after");
 
                     mContext = (Context) param.args[0];
-
 
 
                     XcustomHelpers.callMethod(Runtime.getRuntime(), "doLoad", "/system/lib/libnative-lib.so", mContext.getClassLoader());
@@ -270,17 +279,45 @@ public class Hook3 implements IXcustomHookLoadPackage {
      * 01-06 00:31:12.926 12000-12060/com.sup.android.superb W/System.err:     at com.l.sevenclasshook.hook.Hook3.fart(Hook3.java:240)
      * 01-06 00:31:12.926 12000-12060/com.sup.android.superb W/System.err:     at com.l.sevenclasshook.hook.Hook3$3$1.run(Hook3.java:95)
      * 01-06 00:31:12.926 12000-12060/com.sup.android.superb W/System.err:     at java.lang.Thread.run(Thread.java:818)
+     *
      * @param appClassloader
      */
 
     public void TestClassloader(ClassLoader appClassloader) {
+        if (appClassloader instanceof BaseDexClassLoader) {
+
+        } else if (appClassloader instanceof ClassLoader) {
+            List<String> nameList = new ArrayList<>();
+
+            BufferedReader br = null;
+            try {
+                br = new BufferedReader(new InputStreamReader(new FileInputStream(new File(Environment.getExternalStorageDirectory() + "/8958236_classlist.txt")),
+                        "UTF-8"));
+                String lineTxt = null;
+                while ((lineTxt = br.readLine()) != null) {
+                    if (!TextUtils.isEmpty(lineTxt)) {
+                        String name = lineTxt.replace("L", "").replaceAll("/", ".").replace(";", "");
+                        Log.e("hook1", "after replace name:" + name);
+                        nameList.add(name);
+                    }
+                }
+                br.close();
+            } catch (Exception e) {
+                Log.e("hook1", Log.getStackTraceString(e));
+            }
 
 
+            for (String name : nameList) {
+                try {
+                    Log.e("Hook1", "===================>loadClass:" + name);
+                    appClassloader.loadClass(name);
+                } catch (Exception e) {
+                    Log.e("Hook1", Log.getStackTraceString(e));
+                }
+            }
 
-        if (true) {
             return;
         }
-
 
 
         Field pathList_Field = (Field) getClassField(appClassloader, "dalvik.system.BaseDexClassLoader", "pathList");
